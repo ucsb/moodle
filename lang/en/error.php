@@ -263,6 +263,8 @@ $string['filternotenabled'] = 'Filter not enabled!';
 $string['filternotinstalled'] = 'Filter {$a} is not currently installed';
 $string['forumblockingtoomanyposts'] = 'You have exceeded the posting threshold set for this forum';
 $string['generalexceptionmessage'] = 'Exception - {$a}';
+// UCSB. 2020-06-25. HG.  Adding messaging for when there exists duplicate categories in {grade_items}
+$string['gradebookduplicatecategories'] = 'The gradebook contain duplicate categories where itemtype = "category" and grade_items.instanceid: {$a}';
 $string['gradepubdisable'] = 'Grade publishing disabled';
 $string['gradesneedregrading'] = 'The course grades need to be recalculated';
 $string['gradecantregrade'] = 'An error occurred during grade calculation: {$a}';

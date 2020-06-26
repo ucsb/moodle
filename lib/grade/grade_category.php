@@ -2067,6 +2067,50 @@ class grade_category extends grade_object {
         return $result;
     }
 
+    // UCSB. 2020-06-25. HG. The following check takes care of one of the infinite loops. https://app.asana.com/0/1116160002554254/1181879988459121/f
+    /**
+     * Method to throw an exception if an infinite loop is found, or if multiple identical categories are found
+     *
+     * @param array $cats
+     * @param array $items
+     *
+     * @access private
+     * @returns Returns true if no infinite loops or multiple identical categories are found, else throws an exception.
+     */
+    private function _infinite_loop_check ($cats = [], $items = []) {
+        if (empty($cats) || empty($items)) {
+            return true;
+        }
+        $missingcategories = [];
+        $searchcategories = [];
+        $duplicatecategories = [];
+        foreach ($items as $item) {
+            // for this case, {grade_items}.iteminstance contains the {grade_categories}.id
+            if ($item->itemtype == 'course' || $item->itemtype == 'category') {
+                if (array_key_exists($item->iteminstance, $searchcategories)) {
+                    $duplicatecategories[$item->iteminstance] = $item->iteminstance;
+                }
+                $searchcategories[$item->iteminstance] = $item->iteminstance;
+                if (!is_numeric($item->iteminstance) || !array_key_exists($item->iteminstance, $cats)) {
+                    $missingcategories[] = 'iteminstance: '.$item->iteminstance;
+                }
+            } else if (!is_numeric($item->categoryid) || !array_key_exists($item->categoryid, $cats)) {
+                $missingcategories[] = 'categoryid: ' . $item->categoryid;
+            }
+        }
+
+        // for missing categories
+        if (!empty($missingcategories)) {
+            throw new moodle_exception('cannotfindcategory', '', '', implode(', ', $missingcategories));
+        }
+
+        // for duplicate categories (this does not cause an infinite loop)
+        if (!empty($duplicatecategories)) {
+            throw new moodle_exception('gradebookduplicatecategories', '', '', implode(', ', $duplicatecategories));
+        }
+        return true;
+    }
+
     /**
      * Fetches and returns all the children categories and/or grade_items belonging to this category.
      * By default only returns the immediate children (depth=1), but deeper levels can be requested,
@@ -2084,6 +2128,9 @@ class grade_category extends grade_object {
 
         $cats  = $DB->get_records('grade_categories', array('courseid' => $this->courseid));
         $items = $DB->get_records('grade_items', array('courseid' => $this->courseid));
+
+        // UCSB. 2020-06-25. HG.  This method can enter an infinite loop in many ways.  The following check takes care of one of the infinite loops. https://app.asana.com/0/1116160002554254/1181879988459121/f
+        $this->_infinite_loop_check ($cats, $items);
 
         // init children array first
         foreach ($cats as $catid=>$cat) {
